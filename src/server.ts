@@ -109,6 +109,10 @@ const submitTransactionSchema = z.object({
   signedXdr: z.string().trim().min(20),
 });
 
+const testnetFundWalletSchema = z.object({
+  publicKey: stellarPublicKeySchema,
+});
+
 function sendValidationError(res: express.Response, error: z.ZodError): void {
   res.status(400).json({
     error: "Validation failed",
@@ -131,6 +135,15 @@ function toPublicNgo(ngo: {
     stellarPublicKey: ngo.stellarPublicKey,
     createdAt: ngo.createdAt,
   };
+}
+
+async function isNgoOnActiveNetwork(stellarPublicKey: string): Promise<boolean> {
+  try {
+    await ensureAccountExists(stellarPublicKey, "stellarPublicKey");
+    return true;
+  } catch (_error) {
+    return false;
+  }
 }
 
 app.get("/", (_req, res) => {
@@ -169,6 +182,78 @@ app.get("/api/stellar/network", async (_req, res) => {
   }
 });
 
+app.post("/api/testnet/fund-wallet", async (req, res) => {
+  if (config.stellarNetwork !== "TESTNET") {
+    res.status(400).json({
+      error: "Testnet funding endpoint is available only when STELLAR_NETWORK=TESTNET",
+    });
+    return;
+  }
+
+  const parsed = testnetFundWalletSchema.safeParse(req.body);
+  if (!parsed.success) {
+    sendValidationError(res, parsed.error);
+    return;
+  }
+
+  const friendbotUrl = `https://friendbot.stellar.org/?addr=${encodeURIComponent(parsed.data.publicKey)}`;
+
+  try {
+    const response = await fetch(friendbotUrl, { method: "POST" });
+    const rawBody = await response.text();
+
+    let body: unknown = rawBody;
+    try {
+      body = JSON.parse(rawBody);
+    } catch (_error) {
+      // Keep raw text response when not JSON.
+    }
+
+    if (!response.ok) {
+      const detailText =
+        typeof (body as { detail?: unknown })?.detail === "string"
+          ? (body as { detail: string }).detail
+          : "";
+
+      if (
+        response.status === 400 &&
+        detailText.toLowerCase().includes("already funded")
+      ) {
+        res.json({
+          funded: true,
+          alreadyFunded: true,
+          publicKey: parsed.data.publicKey,
+          friendbotResponse: body,
+        });
+        return;
+      }
+
+      res.status(502).json({
+        error: "Friendbot funding failed",
+        details: body,
+      });
+      return;
+    }
+
+    const hash =
+      typeof (body as { hash?: unknown })?.hash === "string"
+        ? (body as { hash: string }).hash
+        : undefined;
+
+    res.json({
+      funded: true,
+      publicKey: parsed.data.publicKey,
+      hash,
+      friendbotResponse: body,
+    });
+  } catch (error) {
+    res.status(502).json({
+      error: "Friendbot request failed",
+      details: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+});
+
 app.post("/api/ngos", async (req, res) => {
   const parsed = registerNgoSchema.safeParse(req.body);
   if (!parsed.success) {
@@ -198,8 +283,17 @@ app.post("/api/ngos", async (req, res) => {
 });
 
 app.get("/api/ngos", async (_req, res) => {
-  const ngos = (await store.listNgos()).map(toPublicNgo);
-  res.json({ ngos });
+  const ngos = await store.listNgos();
+  const networkAwareNgos = (
+    await Promise.all(
+      ngos.map(async (ngo) =>
+        (await isNgoOnActiveNetwork(ngo.stellarPublicKey)) ? ngo : null,
+      ),
+    )
+  ).filter((ngo): ngo is NonNullable<typeof ngo> => ngo !== null);
+
+  const publicNgos = networkAwareNgos.map(toPublicNgo);
+  res.json({ ngos: publicNgos });
 });
 
 app.get("/api/ngos/:ngoId/metrics", async (req, res) => {

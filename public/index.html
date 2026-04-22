@@ -44,6 +44,12 @@
           placeholder="G..."
           autocomplete="off"
         />
+        <button type="button" id="fundTestnetBtn" class="button button-primary hidden">
+          Fund Wallet On Testnet
+        </button>
+        <p id="fundTestnetHint" class="meta hidden">
+          Testnet wallet funding is available only when the app runs on TESTNET.
+        </p>
       </section>
 
       <section class="card" aria-labelledby="donateTitle">
@@ -101,6 +107,24 @@
           Freighter mode signs automatically. Manual mode: sign the generated XDR in
           your wallet, then paste the signed XDR below.
         </p>
+
+        <div id="confirmPanel" class="confirm-panel hidden">
+          <h3>Confirm Recipient Before Signing</h3>
+          <ul class="facts confirm-facts">
+            <li><strong>Network:</strong> <span id="confirmNetwork">-</span></li>
+            <li><strong>Recipient Wallet:</strong> <span id="confirmRecipientWallet">-</span></li>
+            <li><strong>One-time Address:</strong> <span id="confirmOneTimeAddress">-</span></li>
+            <li><strong>Amount:</strong> <span id="confirmAmount">-</span></li>
+          </ul>
+          <div class="confirm-actions">
+            <button type="button" id="confirmAndSignBtn" class="button button-primary">
+              Confirm And Continue
+            </button>
+            <button type="button" id="cancelConfirmBtn" class="button button-muted">
+              Cancel
+            </button>
+          </div>
+        </div>
 
         <label for="unsignedXdr">Unsigned XDR (generated)</label>
         <textarea id="unsignedXdr" rows="4" readonly></textarea>

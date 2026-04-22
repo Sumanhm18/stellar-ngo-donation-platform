@@ -184,9 +184,42 @@ textarea:focus {
   color: #2f1200;
 }
 
+.button-muted {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text);
+}
+
 .meta {
   color: var(--muted);
   font-size: 0.88rem;
+}
+
+.confirm-panel {
+  border: 1px solid rgba(91, 230, 169, 0.35);
+  background: rgba(6, 21, 16, 0.78);
+  border-radius: 12px;
+  padding: 12px;
+  margin: 8px 0 14px;
+}
+
+.confirm-panel h3 {
+  margin: 0 0 8px;
+  font-size: 0.98rem;
+}
+
+.confirm-facts {
+  margin-top: 0;
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.confirm-actions .button {
+  width: auto;
+  margin-top: 0;
 }
 
 .result {

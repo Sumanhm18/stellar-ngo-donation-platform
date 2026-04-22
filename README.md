@@ -7,9 +7,12 @@ A backend starter for a privacy-aware NGO donation platform that uses the **Stel
 - Stellar-powered donation transaction flow (intent -> unsigned XDR -> signed submit).
 - Dynamic one-time donation destinations using Stellar muxed addresses (`M...`).
 - NGO registration with verified Stellar account IDs.
+- Network-aware NGO filtering so only active wallets on the current chain are listed.
 - Encrypted off-chain donation metadata using AES-256-GCM + RSA-OAEP.
 - Identity fingerprint hashing (salted with server-side pepper).
 - NGO metrics endpoint with confirmed donation totals by asset.
+- One-click testnet wallet funding via Friendbot.
+- Recipient confirmation step before signing/submitting transactions.
 
 ## Tech Stack
 
@@ -124,6 +127,20 @@ Use contents of `ngo-public.pem` in the NGO registration request.
 
 Returns live Horizon and ledger details for the currently configured network.
 
+### 1.2) Fund A Testnet Wallet (Friendbot)
+
+- `POST /api/testnet/fund-wallet`
+
+Request body:
+
+```json
+{
+  "publicKey": "G..."
+}
+```
+
+This endpoint is available only when `STELLAR_NETWORK=TESTNET`.
+
 ### 2) Register NGO
 
 - `POST /api/ngos`
@@ -214,15 +231,22 @@ The frontend is served directly by the backend at `http://localhost:4000`.
   - `Registered NGO` to send to a verified NGO wallet.
   - `Specific Wallet` to send directly to any active Stellar wallet.
 4. Enter amount and click **Donate On Stellar**.
-5. Approve signing in Freighter.
-6. Transaction is submitted and appears with tx hash and explorer link.
+5. Review the recipient confirmation panel and click **Confirm And Continue**.
+6. Approve signing in Freighter.
+7. Transaction is submitted and appears with tx hash and explorer link.
 
 ### Option B: Manual Signed XDR
 
 1. Switch to **Manual Public Key** mode.
 2. Enter donor public key and create donation (NGO or specific wallet mode).
-3. Copy unsigned XDR from UI and sign in your wallet tool.
-4. Paste signed XDR and click **Submit Signed XDR**.
+3. Confirm recipient details in the confirmation panel.
+4. Copy unsigned XDR from UI and sign in your wallet tool.
+5. Paste signed XDR and click **Submit Signed XDR**.
+
+### Testnet Funding Button
+
+When the app runs on TESTNET, the donor wallet section shows **Fund Wallet On Testnet**.
+Use this button to fund the donor wallet quickly through Friendbot before sending test donations.
 
 After successful submit, transaction details are visible in UI and on Stellar explorer.
 

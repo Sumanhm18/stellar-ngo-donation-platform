@@ -8,6 +8,7 @@ const state = {
   connectedPublicKey: "",
   currentDonationId: "",
   unsignedXdr: "",
+  pendingSigningContext: null,
 };
 
 const stellarPublicKeyPattern = /^G[A-Z2-7]{55}$/;
@@ -26,6 +27,15 @@ const els = {
   walletStatus: document.getElementById("walletStatus"),
   donorPublicKey: document.getElementById("donorPublicKey"),
   connectFreighterBtn: document.getElementById("connectFreighterBtn"),
+  fundTestnetBtn: document.getElementById("fundTestnetBtn"),
+  fundTestnetHint: document.getElementById("fundTestnetHint"),
+  confirmPanel: document.getElementById("confirmPanel"),
+  confirmNetwork: document.getElementById("confirmNetwork"),
+  confirmRecipientWallet: document.getElementById("confirmRecipientWallet"),
+  confirmOneTimeAddress: document.getElementById("confirmOneTimeAddress"),
+  confirmAmount: document.getElementById("confirmAmount"),
+  confirmAndSignBtn: document.getElementById("confirmAndSignBtn"),
+  cancelConfirmBtn: document.getElementById("cancelConfirmBtn"),
   unsignedXdr: document.getElementById("unsignedXdr"),
   signedXdr: document.getElementById("signedXdr"),
   submitSignedBtn: document.getElementById("submitSignedBtn"),
@@ -111,6 +121,31 @@ async function loadNetworkAndNgos() {
 
   els.networkPill.textContent = `Network: ${networkData.network} | Horizon: ${networkData.horizonVersion}`;
   renderNgos();
+  updateTestnetFundingUi();
+}
+
+function updateTestnetFundingUi() {
+  const isTestnet = state.network === "TESTNET";
+  els.fundTestnetBtn.classList.toggle("hidden", !isTestnet);
+  els.fundTestnetHint.classList.toggle("hidden", isTestnet);
+}
+
+function clearPendingConfirmation() {
+  state.pendingSigningContext = null;
+  els.confirmPanel.classList.add("hidden");
+  els.confirmNetwork.textContent = "-";
+  els.confirmRecipientWallet.textContent = "-";
+  els.confirmOneTimeAddress.textContent = "-";
+  els.confirmAmount.textContent = "-";
+}
+
+function setPendingConfirmation(details) {
+  state.pendingSigningContext = details;
+  els.confirmPanel.classList.remove("hidden");
+  els.confirmNetwork.textContent = details.network;
+  els.confirmRecipientWallet.textContent = details.recipientWalletPublicKey;
+  els.confirmOneTimeAddress.textContent = details.oneTimeAddress;
+  els.confirmAmount.textContent = `${details.amount} XLM`;
 }
 
 async function ensureFreighterLoaded() {
@@ -323,6 +358,79 @@ async function connectFreighter() {
   }
 }
 
+async function fundTestnetWallet() {
+  if (state.network !== "TESTNET") {
+    setResult("Wallet funding button works only on TESTNET.", "error");
+    return;
+  }
+
+  const targetPublicKey = els.donorPublicKey.value.trim().toUpperCase();
+  if (!stellarPublicKeyPattern.test(targetPublicKey)) {
+    setResult("Enter a valid donor public key before funding.", "error");
+    return;
+  }
+
+  try {
+    setResult("Funding wallet from Friendbot...", "info");
+    const funded = await api("/api/testnet/fund-wallet", {
+      method: "POST",
+      body: JSON.stringify({ publicKey: targetPublicKey }),
+    });
+
+    const hashSuffix = funded.hash ? ` Transaction: ${funded.hash}` : "";
+    setResult(`Wallet funded on TESTNET.${hashSuffix}`, "success");
+  } catch (error) {
+    const message = normalizeUiError(error, "Friendbot funding failed");
+    setResult(message, "error");
+  }
+}
+
+async function confirmAndContinue() {
+  const pending = state.pendingSigningContext;
+  if (!pending) {
+    setResult("Create a donation first before confirming.", "error");
+    return;
+  }
+
+  if (getWalletMode() !== "freighter") {
+    setResult(
+      "Recipient confirmed. Sign the unsigned XDR in your wallet and paste signed XDR below.",
+      "info",
+    );
+    return;
+  }
+
+  if (!state.walletConnected) {
+    setResult("Connect Freighter first, or switch to Manual mode.", "error");
+    return;
+  }
+
+  try {
+    setResult("Signing transaction in Freighter...", "info");
+    const freighter = await ensureFreighterLoaded();
+    const signedResult = await signWithFreighter(freighter, pending.xdr, {
+      networkPassphrase: pending.networkPassphrase,
+      address: state.connectedPublicKey,
+    });
+
+    const signError = extractFreighterError(signedResult);
+    if (signError) {
+      throw new Error(signError);
+    }
+
+    const signedXdr = extractSignedXdr(signedResult);
+    if (!signedXdr) {
+      throw new Error("Freighter did not return a signed XDR");
+    }
+
+    await submitSignedXdr(pending.donationId, signedXdr);
+    clearPendingConfirmation();
+  } catch (error) {
+    const message = normalizeUiError(error, "Signing failed");
+    setResult(message, "error");
+  }
+}
+
 function explorerUrl(txHash) {
   const path = state.network === "PUBLIC" ? "public" : "testnet";
   return `https://stellar.expert/explorer/${path}/tx/${txHash}`;
@@ -400,41 +508,23 @@ async function createAndBuildDonation(event) {
     state.currentDonationId = intent.donation.id;
     state.unsignedXdr = build.xdr;
     els.unsignedXdr.value = build.xdr;
+    els.signedXdr.value = "";
     els.donationIdValue.textContent = intent.donation.id;
     els.txHashValue.textContent = "-";
     els.ledgerValue.textContent = "-";
     els.explorerLink.classList.add("hidden");
 
-    setResult("Unsigned XDR created. Signing transaction...", "info");
+    setPendingConfirmation({
+      donationId: intent.donation.id,
+      xdr: build.xdr,
+      networkPassphrase: build.networkPassphrase,
+      network: state.network,
+      recipientWalletPublicKey: intent.donation.recipientWalletPublicKey,
+      oneTimeAddress: intent.donation.oneTimeAddress,
+      amount: intent.donation.amount,
+    });
 
-    if (getWalletMode() === "freighter") {
-      if (!state.walletConnected) {
-        setResult("Connect Freighter first, or switch to Manual mode.", "error");
-        return;
-      }
-
-      const freighter = await ensureFreighterLoaded();
-      const signedResult = await signWithFreighter(freighter, build.xdr, {
-        networkPassphrase: build.networkPassphrase,
-        address: state.connectedPublicKey,
-      });
-
-      const signError = extractFreighterError(signedResult);
-      if (signError) {
-        throw new Error(signError);
-      }
-
-      const signedXdr = extractSignedXdr(signedResult);
-
-      if (!signedXdr) {
-        throw new Error("Freighter did not return a signed XDR");
-      }
-
-      await submitSignedXdr(intent.donation.id, signedXdr);
-      return;
-    }
-
-    setResult("Unsigned XDR ready. Sign in your wallet and paste signed XDR below.", "info");
+    setResult("Review recipient details, then click Confirm And Continue.", "info");
   } catch (error) {
     const message = normalizeUiError(error, "Donation flow failed");
     setResult(message, "error");
@@ -474,6 +564,7 @@ async function init() {
 
   setWalletInputsState();
   setTargetInputsState();
+  clearPendingConfirmation();
   updateWalletAvailabilityHint();
 
   document.querySelectorAll("input[name='walletMode']").forEach((input) => {
@@ -492,6 +583,7 @@ async function init() {
   document.querySelectorAll("input[name='targetMode']").forEach((input) => {
     input.addEventListener("change", () => {
       setTargetInputsState();
+      clearPendingConfirmation();
       if (getTargetMode() === "wallet") {
         setResult("Direct wallet mode enabled. Enter recipient wallet public key.", "info");
       }
@@ -499,7 +591,13 @@ async function init() {
   });
 
   els.connectFreighterBtn.addEventListener("click", connectFreighter);
+  els.fundTestnetBtn.addEventListener("click", fundTestnetWallet);
   els.donationForm.addEventListener("submit", createAndBuildDonation);
+  els.confirmAndSignBtn.addEventListener("click", confirmAndContinue);
+  els.cancelConfirmBtn.addEventListener("click", () => {
+    clearPendingConfirmation();
+    setResult("Recipient confirmation canceled.", "info");
+  });
   els.submitSignedBtn.addEventListener("click", submitManualSignedXdr);
 }
 
