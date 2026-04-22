@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Stellar NGO Donations</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="backdrop"></div>
+    <main class="layout">
+      <section class="hero card">
+        <p class="eyebrow">Stellar Mainnet Donations</p>
+        <h1>Donate Any Amount, Settle Directly On Stellar</h1>
+        <p class="hero-copy">
+          This flow creates a real Stellar payment transaction and publishes it to
+          the configured network.
+        </p>
+        <div class="network-pill" id="networkPill">Checking network...</div>
+      </section>
+
+      <section class="card" aria-labelledby="walletTitle">
+        <h2 id="walletTitle">1. Connect Donor Wallet</h2>
+        <div class="wallet-modes">
+          <label>
+            <input type="radio" name="walletMode" value="freighter" checked />
+            Freighter Wallet
+          </label>
+          <label>
+            <input type="radio" name="walletMode" value="manual" />
+            Manual Public Key
+          </label>
+        </div>
+        <div class="wallet-row">
+          <button type="button" id="connectFreighterBtn" class="button button-accent">
+            Connect Freighter
+          </button>
+          <span class="meta" id="walletStatus">Not connected</span>
+        </div>
+        <label for="donorPublicKey">Donor Public Key</label>
+        <input
+          id="donorPublicKey"
+          type="text"
+          placeholder="G..."
+          autocomplete="off"
+        />
+      </section>
+
+      <section class="card" aria-labelledby="donateTitle">
+        <h2 id="donateTitle">2. Create Donation</h2>
+        <form id="donationForm">
+          <div class="wallet-modes">
+            <label>
+              <input type="radio" name="targetMode" value="ngo" checked />
+              Registered NGO
+            </label>
+            <label>
+              <input type="radio" name="targetMode" value="wallet" />
+              Specific Wallet
+            </label>
+          </div>
+
+          <div id="ngoTargetGroup">
+          <label for="ngoSelect">NGO</label>
+          <select id="ngoSelect" required></select>
+          </div>
+
+          <div id="walletTargetGroup" class="hidden">
+            <label for="recipientWalletPublicKey">Recipient Wallet Public Key</label>
+            <input
+              id="recipientWalletPublicKey"
+              type="text"
+              placeholder="G..."
+              autocomplete="off"
+            />
+            <p class="meta">
+              Send funds directly to this Stellar wallet address on the active network.
+            </p>
+          </div>
+
+          <label for="amountInput">Amount (XLM)</label>
+          <input id="amountInput" type="number" min="0.0000001" step="0.0000001" required />
+
+          <label for="purposeInput">Purpose (optional)</label>
+          <input id="purposeInput" type="text" maxlength="120" />
+
+          <label for="messageInput">Donor Message (optional)</label>
+          <textarea id="messageInput" rows="3" maxlength="500"></textarea>
+
+          <p id="walletModeHint" class="meta hidden">
+            Direct wallet mode disables purpose/message encryption fields.
+          </p>
+
+          <button type="submit" class="button button-primary">Donate On Stellar</button>
+        </form>
+      </section>
+
+      <section class="card" aria-labelledby="signTitle">
+        <h2 id="signTitle">3. Sign/Submit Transaction</h2>
+        <p class="meta">
+          Freighter mode signs automatically. Manual mode: sign the generated XDR in
+          your wallet, then paste the signed XDR below.
+        </p>
+
+        <label for="unsignedXdr">Unsigned XDR (generated)</label>
+        <textarea id="unsignedXdr" rows="4" readonly></textarea>
+
+        <label for="signedXdr">Signed XDR (manual mode)</label>
+        <textarea id="signedXdr" rows="4" placeholder="Paste signed XDR if not using Freighter"></textarea>
+
+        <button type="button" id="submitSignedBtn" class="button button-accent">
+          Submit Signed XDR
+        </button>
+      </section>
+
+      <section class="card" aria-labelledby="resultTitle">
+        <h2 id="resultTitle">Transaction Result</h2>
+        <div id="resultBox" class="result">No transaction submitted yet.</div>
+        <ul class="facts">
+          <li><strong>Donation ID:</strong> <span id="donationIdValue">-</span></li>
+          <li><strong>Transaction Hash:</strong> <span id="txHashValue">-</span></li>
+          <li><strong>Ledger:</strong> <span id="ledgerValue">-</span></li>
+        </ul>
+        <a id="explorerLink" href="#" target="_blank" rel="noreferrer" class="hidden">
+          View On Stellar Explorer
+        </a>
+      </section>
+    </main>
+
+    <script src="/vendor/freighter-api.min.js"></script>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

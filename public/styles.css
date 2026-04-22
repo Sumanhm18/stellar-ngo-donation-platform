@@ -1,0 +1,247 @@
+@import url("https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&family=Space+Mono:wght@400;700&display=swap");
+
+:root {
+  --bg-1: #081217;
+  --bg-2: #10202a;
+  --panel: rgba(14, 27, 35, 0.86);
+  --panel-border: rgba(130, 218, 188, 0.24);
+  --text: #eaf6f1;
+  --muted: #9bc2b3;
+  --accent: #5be6a9;
+  --accent-2: #ffc46d;
+  --danger: #ff7474;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Sora", sans-serif;
+  color: var(--text);
+  background: radial-gradient(circle at 20% -10%, #1f3d2f, transparent 40%),
+    radial-gradient(circle at 80% 0%, #3f2f1c, transparent 30%),
+    linear-gradient(135deg, var(--bg-1), var(--bg-2));
+  min-height: 100vh;
+}
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image: linear-gradient(
+      rgba(255, 255, 255, 0.03) 1px,
+      transparent 1px
+    ),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: radial-gradient(circle at 50% 30%, black 45%, transparent 90%);
+}
+
+.layout {
+  width: min(1100px, 94vw);
+  margin: 24px auto 42px;
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(12, 1fr);
+}
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 18px;
+  padding: 18px;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.28);
+}
+
+.hero {
+  grid-column: span 12;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero::after {
+  content: "";
+  position: absolute;
+  top: -70px;
+  right: -70px;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(91, 230, 169, 0.45), transparent 65%);
+}
+
+.eyebrow {
+  font-family: "Space Mono", monospace;
+  font-size: 12px;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0;
+}
+
+h1 {
+  margin: 8px 0 8px;
+  font-size: clamp(1.5rem, 4vw, 2.4rem);
+  line-height: 1.2;
+}
+
+h2 {
+  margin: 0 0 14px;
+  font-size: 1.15rem;
+}
+
+.hero-copy {
+  margin: 0;
+  max-width: 68ch;
+  color: var(--muted);
+}
+
+.network-pill {
+  margin-top: 14px;
+  display: inline-flex;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-family: "Space Mono", monospace;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  font-size: 0.86rem;
+}
+
+label {
+  display: block;
+  margin: 10px 0 6px;
+  color: #cae8db;
+  font-size: 0.92rem;
+}
+
+input,
+select,
+textarea,
+button {
+  width: 100%;
+  border-radius: 11px;
+  border: 1px solid rgba(179, 220, 206, 0.3);
+  background: rgba(8, 18, 23, 0.8);
+  color: var(--text);
+  padding: 11px 12px;
+  font: inherit;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: 2px solid rgba(91, 230, 169, 0.45);
+  outline-offset: 1px;
+}
+
+.wallet-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.wallet-row button {
+  width: auto;
+}
+
+.wallet-modes {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.wallet-modes label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 0.88rem;
+}
+
+.wallet-modes input[type="radio"] {
+  width: auto;
+  margin: 0;
+}
+
+.button {
+  cursor: pointer;
+  border: none;
+  margin-top: 12px;
+  font-weight: 600;
+}
+
+.button-primary {
+  background: linear-gradient(120deg, var(--accent), #3cc2d7);
+  color: #022016;
+}
+
+.button-accent {
+  background: linear-gradient(120deg, var(--accent-2), #ef8c48);
+  color: #2f1200;
+}
+
+.meta {
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.result {
+  border: 1px dashed rgba(255, 255, 255, 0.25);
+  background: rgba(7, 15, 20, 0.9);
+  border-radius: 11px;
+  padding: 12px;
+  min-height: 58px;
+  color: #def4ec;
+}
+
+.facts {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0 10px;
+  display: grid;
+  gap: 6px;
+  font-family: "Space Mono", monospace;
+  font-size: 0.85rem;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+.hidden {
+  display: none;
+}
+
+section.card:nth-of-type(2),
+section.card:nth-of-type(3),
+section.card:nth-of-type(4),
+section.card:nth-of-type(5) {
+  grid-column: span 6;
+}
+
+@media (max-width: 900px) {
+  section.card:nth-of-type(2),
+  section.card:nth-of-type(3),
+  section.card:nth-of-type(4),
+  section.card:nth-of-type(5) {
+    grid-column: span 12;
+  }
+
+  .wallet-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .wallet-row button {
+    width: 100%;
+  }
+}
